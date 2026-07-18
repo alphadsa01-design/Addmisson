@@ -1,0 +1,24 @@
+import { z } from 'zod';
+
+export const registerSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters long'),
+    name: z.string().min(2, 'Name must be at least 2 characters long'),
+    designation: z.string().optional(),
+  }),
+});
+
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+  }),
+});
+
+export const adminRequestSchema = z.object({
+  body: z.object({
+    requestedRole: z.enum(['ADMIN', 'SUPER_ADMIN']),
+    remarks: z.string().min(5, 'Please provide remarks detailing the request reason (min 5 chars)'),
+  }),
+});
