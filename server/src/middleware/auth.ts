@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
+import prisma from '../prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured';
+// Create Remote JWK Set for Neon Auth JWKS token verification
+const JWKS_URL = process.env.JWKS_URL || 'https://ep-lucky-dust-aveiwjlq.neonauth.c-11.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
+const JWKS = jose.createRemoteJWKSet(new URL(JWKS_URL));
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -23,18 +26,6 @@ export const protect = async (
     // Check Authorization Header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-    } 
-    // Check Cookies
-    else if (req.headers.cookie) {
-      const parsedCookies = Object.fromEntries(
-        req.headers.cookie.split(';').map((c) => {
-          const [key, ...val] = c.trim().split('=');
-          return [key, val.join('=')];
-        })
-      );
-      if (parsedCookies.token) {
-        token = parsedCookies.token;
-      }
     }
 
     if (!token) {
@@ -45,17 +36,44 @@ export const protect = async (
       return;
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email: string;
-      role: 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';
-      name: string;
-    };
+    // Verify token using Neon Auth JWKS
+    const { payload } = await jose.jwtVerify(token, JWKS);
+    
+    const email = payload.email as string;
+    if (!email) {
+      res.status(401).json({
+        status: 'error',
+        message: 'Invalid token payload: missing email.',
+      });
+      return;
+    }
 
-    req.user = decoded;
+    // Lookup user in local database by email
+    let user = await prisma.user.findUnique({ where: { email } });
+    
+    // Auto-create user record locally if registered externally via Neon Auth
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: (payload.name as string) || (payload.preferred_username as string) || email.split('@')[0],
+          password: 'NEON_AUTH_MANAGED_PASS', // Dummy password
+          role: 'STAFF',
+          designation: 'Operator',
+        },
+      });
+    }
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role as 'STAFF' | 'ADMIN' | 'SUPER_ADMIN',
+      name: user.name,
+    };
+    
     next();
   } catch (error) {
+    console.error('JWT Verification Error:', error);
     res.status(401).json({
       status: 'error',
       message: 'Invalid or expired token. Please log in again.',

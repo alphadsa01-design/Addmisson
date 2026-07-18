@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api';
+import { authClient } from '../auth';
 import { Mail, Lock, User, Briefcase, AlertCircle, Building, ShieldCheck, CheckCircle } from 'lucide-react';
 
 const Register: React.FC = () => {
@@ -21,21 +21,22 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/register', {
-        name,
+      const res = await authClient.signUp.email({
         email,
-        designation,
         password,
+        name,
       });
 
-      if (response.data.status === 'success') {
-        setSuccess('Registration successful! Redirecting to secure login...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+      if (res.error) {
+        throw new Error(res.error.message || 'Registration failed');
       }
+
+      setSuccess('Registration successful! Please check your email for the confirmation link, then log in.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 5000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
