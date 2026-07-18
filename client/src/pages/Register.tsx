@@ -49,10 +49,9 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await authClient.verifyEmail({
-        query: {
-          token: code,
-        },
+      const res = await authClient.emailOtp.verifyEmail({
+        email,
+        otp: code,
       });
 
       if (res.error) {
