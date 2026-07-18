@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authClient } from '../auth';
-import { Mail, Lock, User, Briefcase, AlertCircle, Building, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, AlertCircle, Building, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +10,8 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [designation, setDesignation] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,12 +33,38 @@ const Register: React.FC = () => {
         throw new Error(res.error.message || 'Registration failed');
       }
 
-      setSuccess('Registration successful! We have sent a verification code to your email. Redirecting to verification page...');
-      setTimeout(() => {
-        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
-      }, 3000);
+      setSuccess('Account created! A verification code has been sent to your email.');
+      setShowVerification(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const res = await authClient.verifyEmail({
+        query: {
+          token: code,
+        },
+      });
+
+      if (res.error) {
+        throw new Error(res.error.message || 'Verification failed. Please check the code.');
+      }
+
+      setSuccess('Email verified successfully! Redirecting to secure login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'Email verification failed.');
     } finally {
       setLoading(false);
     }
@@ -107,123 +135,184 @@ const Register: React.FC = () => {
         </p>
       </div>
 
-      {/* Right Pane - Register form */}
+      {/* Right Pane - Register / Verify form */}
       <div className="w-full md:w-5/12 bg-white flex flex-col justify-center p-8 sm:p-12">
         <div className="max-w-sm w-full mx-auto space-y-5 animate-fade-in">
-          <div>
-            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Create Desk Account</h3>
-            <p className="text-xs font-semibold text-slate-500 mt-1">
-              Fill in your details below to register an account.
-            </p>
-          </div>
+          {!showVerification ? (
+            <>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Create Desk Account</h3>
+                <p className="text-xs font-semibold text-slate-500 mt-1">
+                  Fill in your details below to register an account.
+                </p>
+              </div>
 
-          {error && (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-3">
-              <AlertCircle size={16} className="shrink-0" />
-              <p className="font-semibold">{error}</p>
-            </div>
+              {error && (
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-3">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <p className="font-semibold">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-250 text-slate-600 text-xs flex items-center gap-3">
+                  <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin"></div>
+                  <p className="font-semibold">{success}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <User size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Shri Mayank Parashar"
+                      className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Mail size={16} />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="staff@iti.gov.in"
+                      className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Designation / Position
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Briefcase size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      value={designation}
+                      onChange={(e) => setDesignation(e.target.value)}
+                      placeholder="e.g. Admission Supervisor"
+                      className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Secure Password
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                >
+                  {loading ? 'Registering Account...' : 'Register Secure Account'}
+                </button>
+              </form>
+
+              <div className="text-center pt-1 border-t border-slate-100 mt-6">
+                <p className="text-xs text-slate-500 mt-4">
+                  Already have a login?{' '}
+                  <Link to="/login" className="text-slate-900 font-bold hover:underline">
+                    Sign In Here
+                  </Link>
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Confirm OTP Code</h3>
+                <p className="text-xs font-semibold text-slate-500 mt-1">
+                  We've sent a verification code to <span className="font-bold text-slate-700">{email}</span>.
+                </p>
+              </div>
+
+              {error && (
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-3">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <p className="font-semibold">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-250 text-emerald-700 text-xs flex items-center gap-3">
+                  <CheckCircle size={16} className="shrink-0" />
+                  <p className="font-semibold">{success}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleVerify} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Verification OTP Token
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="Paste email verification code"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-450 transition form-input-focus"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Confirming OTP...' : 'Verify & Complete Signup'}
+                  <ArrowRight size={14} />
+                </button>
+              </form>
+
+              <div className="text-center pt-2">
+                <button
+                  onClick={() => setShowVerification(false)}
+                  className="text-xs text-slate-500 font-bold hover:underline"
+                >
+                  Back to Registration Details
+                </button>
+              </div>
+            </>
           )}
-
-          {success && (
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-250 text-slate-600 text-xs flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin"></div>
-              <p className="font-semibold">{success}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Full Name
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                  <User size={16} />
-                </span>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Shri Mayank Parashar"
-                  className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Email Address
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                  <Mail size={16} />
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="staff@iti.gov.in"
-                  className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Designation / Position
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                  <Briefcase size={16} />
-                </span>
-                <input
-                  type="text"
-                  value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                  placeholder="e.g. Admission Supervisor"
-                  className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Secure Password
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                  <Lock size={16} />
-                </span>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-400 transition form-input-focus"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-            >
-              {loading ? 'Registering Account...' : 'Register Secure Account'}
-            </button>
-          </form>
-
-          <div className="text-center pt-1 border-t border-slate-100 mt-6">
-            <p className="text-xs text-slate-500 mt-4">
-              Already have a login?{' '}
-              <Link to="/login" className="text-slate-900 font-bold hover:underline">
-                Sign In Here
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
