@@ -22,14 +22,8 @@
       "dest": "server/src/index.ts"
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "client/$1",
-      "headers": {
-        "cache-control": "no-cache"
-      }
+      "src": "/assets/(.*)",
+      "dest": "client/assets/$1"
     },
     {
       "src": "/(.*)",
