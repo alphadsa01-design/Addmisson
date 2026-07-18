@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import Admissions from './pages/Admissions';
 import AdmissionForm from './pages/AdmissionForm';
 import PrintReports from './pages/PrintReports';
+import VerifyEmail from './pages/VerifyEmail';
 
 
 const App: React.FC = () => {
@@ -34,6 +35,14 @@ const App: React.FC = () => {
               element={
                 <PublicRoute>
                   <Register />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/verify-email"
+              element={
+                <PublicRoute>
+                  <VerifyEmail />
                 </PublicRoute>
               }
             />

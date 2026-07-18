@@ -31,10 +31,10 @@ const Register: React.FC = () => {
         throw new Error(res.error.message || 'Registration failed');
       }
 
-      setSuccess('Registration successful! Please check your email for the confirmation link, then log in.');
+      setSuccess('Registration successful! We have sent a verification code to your email. Redirecting to verification page...');
       setTimeout(() => {
-        navigate('/login');
-      }, 5000);
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      }, 3000);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
