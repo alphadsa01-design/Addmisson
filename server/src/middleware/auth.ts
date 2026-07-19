@@ -2,21 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 
-const JWKS_URL = process.env.JWKS_URL || 'https://ep-lucky-dust-aveiwjlq.neonauth.c-11.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured';
-
-let JWKS: any = null;
-const getJWKS = async () => {
-  if (!JWKS) {
-    try {
-      const { createRemoteJWKSet } = await import('jose');
-      JWKS = createRemoteJWKSet(new URL(JWKS_URL));
-    } catch (e) {
-      console.warn('JWKS dynamic import notice:', e);
-    }
-  }
-  return JWKS;
-};
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -53,30 +39,17 @@ export const protect = async (
     }
 
     let email: string | undefined;
-    let name: string | undefined;
 
-    // 1. Try local JWT_SECRET verification first
+    // Verify JWT token
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       email = decoded.email;
-      name = decoded.name;
-    } catch (localErr) {
-      // Local verification failed
-    }
-
-    // 2. Try Neon Auth JWKS verification as fallback via dynamic ESM import
-    if (!email) {
-      try {
-        const jwks = await getJWKS();
-        if (jwks) {
-          const { jwtVerify } = await import('jose');
-          const { payload } = await jwtVerify(token, jwks);
-          email = payload.email as string;
-          name = (payload.name as string) || (payload.preferred_username as string);
-        }
-      } catch (jwksErr) {
-        // JWKS verification fallback failed
-      }
+    } catch (err) {
+      res.status(401).json({
+        status: 'error',
+        message: 'Invalid or expired token. Please log in again.',
+      });
+      return;
     }
 
     if (!email) {
@@ -87,19 +60,15 @@ export const protect = async (
       return;
     }
 
-    // Lookup user in local database by email
-    let user = await prisma.user.findUnique({ where: { email } });
-    
-    // Auto-create user record locally if registered externally via Neon Auth
+    // Lookup user in database
+    const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email,
-          name: name || email.split('@')[0],
-          password: 'NEON_AUTH_MANAGED_PASS', // Dummy password
-          designation: 'Operator',
-        },
+      res.status(401).json({
+        status: 'error',
+        message: 'User account not found. Please register or sign in again.',
       });
+      return;
     }
 
     req.user = {
@@ -107,7 +76,7 @@ export const protect = async (
       email: user.email,
       name: user.name,
     };
-    
+
     next();
   } catch (error) {
     console.error('JWT Verification Error:', error);
