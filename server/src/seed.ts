@@ -36,7 +36,7 @@ export const seedMetadata = async (): Promise<void> => {
     }
 
     // Seed default Admin user
-    const defaultPasswordHash = await hashPassword('admin123');
+    const defaultPasswordHash = await hashPassword('admin');
     const adminUser = await prisma.user.upsert({
       where: { email: 'admin@iti.gov.in' },
       update: {
