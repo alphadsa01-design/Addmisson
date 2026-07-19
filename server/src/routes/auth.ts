@@ -121,11 +121,8 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
 
 // @route   POST /api/auth/logout
 // @desc    Logout user & clear cookie
-router.post('/logout', protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.post('/logout', async (req, res): Promise<void> => {
   try {
-    if (req.user) {
-      await logAudit(req.user.id, 'USER_LOGOUT', { email: req.user.email }, req);
-    }
     res.clearCookie('token');
     res.status(200).json({ status: 'success', message: 'Logged out successfully' });
   } catch (error) {
