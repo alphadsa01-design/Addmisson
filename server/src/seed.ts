@@ -46,7 +46,6 @@ export const seedMetadata = async (): Promise<void> => {
         email: 'admin@iti.gov.in',
         name: 'System Admin',
         password: defaultPasswordHash,
-        role: 'SUPER_ADMIN',
         designation: 'Principal / ITI Administrator',
       },
     });
@@ -62,7 +61,6 @@ export const seedMetadata = async (): Promise<void> => {
         email: 'staff@iti.gov.in',
         name: 'Admission Staff',
         password: staffPasswordHash,
-        role: 'STAFF',
         designation: 'Admission Operator',
       },
     });

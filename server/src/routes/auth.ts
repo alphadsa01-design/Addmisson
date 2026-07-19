@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 import { validate } from '../middleware/validate';
 import { protect, AuthenticatedRequest } from '../middleware/auth';
-import { registerSchema, loginSchema, adminRequestSchema } from '../schemas/auth';
+import { registerSchema, loginSchema } from '../schemas/auth';
 import { logAudit } from '../middleware/audit';
 import { hashPassword, verifyPassword } from '../utils/password';
 
@@ -32,9 +32,6 @@ router.post('/register', validate(registerSchema), async (req, res): Promise<voi
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Every user is registered with STAFF role (normal operator)
-    const role = 'STAFF';
-
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -42,19 +39,17 @@ router.post('/register', validate(registerSchema), async (req, res): Promise<voi
         password: hashedPassword,
         name,
         designation,
-        role,
       },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true,
         designation: true,
         createdAt: true,
       },
     });
 
-    await logAudit(user.id, 'USER_REGISTER', { email: user.email, role: user.role }, req);
+    await logAudit(user.id, 'USER_REGISTER', { email: user.email }, req);
 
     res.status(201).json({
       status: 'success',
@@ -88,7 +83,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
 
     // Generate JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -99,7 +94,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
       data: { lastLogin: new Date() },
     });
 
-    await logAudit(user.id, 'USER_LOGIN', { email: user.email, role: user.role }, req);
+    await logAudit(user.id, 'USER_LOGIN', { email: user.email }, req);
 
     // Set cookie
     res.cookie('token', token, COOKIE_OPTIONS);
@@ -113,7 +108,6 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
           designation: user.designation,
           lastLogin: user.lastLogin,
         },
@@ -154,7 +148,6 @@ router.get('/me', protect, async (req: AuthenticatedRequest, res: Response): Pro
         id: true,
         email: true,
         name: true,
-        role: true,
         designation: true,
         lastLogin: true,
         createdAt: true,
@@ -164,32 +157,6 @@ router.get('/me', protect, async (req: AuthenticatedRequest, res: Response): Pro
     res.status(200).json({
       status: 'success',
       data: { user },
-    });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
-  }
-});
-
-// @route   POST /api/auth/request-admin
-// @desc    Submit request for Admin or Super Admin role
-router.post('/request-admin', protect, validate(adminRequestSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    res.status(200).json({
-      status: 'success',
-      message: 'Role request logged successfully',
-    });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
-  }
-});
-
-// @route   GET /api/auth/my-requests
-// @desc    Get role requests submitted by current user
-router.get('/my-requests', protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    res.status(200).json({
-      status: 'success',
-      data: { requests: [] },
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Internal server error' });

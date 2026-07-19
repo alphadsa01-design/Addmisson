@@ -15,10 +15,3 @@ export const loginSchema = z.object({
     password: z.string().min(1, 'Password is required'),
   }),
 });
-
-export const adminRequestSchema = z.object({
-  body: z.object({
-    requestedRole: z.enum(['ADMIN', 'SUPER_ADMIN']),
-    remarks: z.string().min(5, 'Please provide remarks detailing the request reason (min 5 chars)'),
-  }),
-});

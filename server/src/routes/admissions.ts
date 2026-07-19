@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import prisma from '../prisma';
 import { validate } from '../middleware/validate';
-import { protect, restrictTo, AuthenticatedRequest } from '../middleware/auth';
+import { protect, AuthenticatedRequest } from '../middleware/auth';
 import { createAdmissionSchema, updateAdmissionSchema } from '../schemas/admission';
 import { logAudit } from '../middleware/audit';
 
@@ -12,7 +12,6 @@ const router = Router();
 router.post(
   '/',
   protect,
-  restrictTo('STAFF', 'ADMIN', 'SUPER_ADMIN'),
   validate(createAdmissionSchema),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
@@ -364,7 +363,6 @@ router.get(
 router.put(
   '/:id',
   protect,
-  restrictTo('STAFF', 'ADMIN', 'SUPER_ADMIN'),
   validate(updateAdmissionSchema),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
@@ -483,7 +481,6 @@ router.put(
 router.delete(
   '/:id',
   protect,
-  restrictTo('STAFF', 'ADMIN', 'SUPER_ADMIN'),
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (!req.user) return;

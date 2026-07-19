@@ -2,13 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api';
 import { authClient } from '../auth';
 
-export type Role = 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';
-
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: Role;
   designation?: string;
   lastLogin?: string;
   createdAt: string;

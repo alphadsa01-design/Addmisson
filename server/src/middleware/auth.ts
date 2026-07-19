@@ -18,7 +18,6 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';
     name: string;
   };
 }
@@ -90,7 +89,6 @@ export const protect = async (
           email,
           name: name || email.split('@')[0],
           password: 'NEON_AUTH_MANAGED_PASS', // Dummy password
-          role: 'STAFF',
           designation: 'Operator',
         },
       });
@@ -99,7 +97,6 @@ export const protect = async (
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.role as 'STAFF' | 'ADMIN' | 'SUPER_ADMIN',
       name: user.name,
     };
     
@@ -111,17 +108,4 @@ export const protect = async (
       message: 'Invalid or expired token. Please log in again.',
     });
   }
-};
-
-export const restrictTo = (...roles: ('STAFF' | 'ADMIN' | 'SUPER_ADMIN')[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      res.status(403).json({
-        status: 'error',
-        message: 'You do not have permission to perform this action.',
-      });
-      return;
-    }
-    next();
-  };
 };

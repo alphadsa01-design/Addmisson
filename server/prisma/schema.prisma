@@ -12,7 +12,6 @@ model User {
   email       String      @unique
   password    String
   name        String
-  role        Role        @default(STAFF)
   designation String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -94,12 +93,6 @@ model Admission {
   @@index([admissionDate])
   @@index([tradeId])
   @@index([instituteId])
-}
-
-enum Role {
-  STAFF
-  ADMIN
-  SUPER_ADMIN
 }
 
 enum AdmissionStatus {
