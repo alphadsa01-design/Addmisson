@@ -74,8 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tokenFound = true;
         }
       } catch (localErr: any) {
-        if (localErr.response?.status === 401 && localErr.response?.data?.message) {
-          throw new Error(localErr.response.data.message);
+        const serverMessage = localErr.response?.data?.message;
+        if (serverMessage) {
+          throw new Error(serverMessage);
         }
       }
 

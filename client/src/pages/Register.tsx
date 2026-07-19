@@ -57,8 +57,10 @@ const Register: React.FC = () => {
         throw new Error('Registration failed. Please check your information and try again.');
       }
 
-      setSuccess('Account created! Verification code sent to your email.');
-      setShowVerification(true);
+      setSuccess('Account created successfully! Redirecting to sign in...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Registration failed');
     } finally {
