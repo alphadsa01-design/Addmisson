@@ -25,9 +25,14 @@ export const protect = async (
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // Fallback to cookie
+    // Check Cookie Header
     if (!token && (req as any).cookies?.token) {
       token = (req as any).cookies.token;
+    }
+
+    // Check Query Parameter (for PDF / Excel browser downloads)
+    if (!token && req.query?.token) {
+      token = req.query.token as string;
     }
 
     if (!token) {

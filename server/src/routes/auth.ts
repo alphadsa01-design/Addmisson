@@ -13,53 +13,25 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
 
 // @route   POST /api/auth/register
-// @desc    Register a new user
-router.post('/register', validate(registerSchema), async (req, res): Promise<void> => {
-  try {
-    const { email, password, name, designation } = req.body;
+// @desc    Register a new user (DISABLED)
+router.post('/register', async (req, res): Promise<void> => {
+  res.status(403).json({
+    status: 'error',
+    message: 'User registration is disabled. Only the default administrator account is permitted to log in.'
+  });
+});
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      res.status(400).json({ status: 'error', message: 'Email already registered' });
-      return;
-    }
-
-    // Hash password
-    const hashedPassword = await hashPassword(password);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        designation,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        designation: true,
-        createdAt: true,
-      },
-    });
-
-    await logAudit(user.id, 'USER_REGISTER', { email: user.email }, req);
-
-    res.status(201).json({
-      status: 'success',
-      message: 'Registration successful',
-      data: { user },
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
-  }
+// @route   POST /api/auth/verify-otp
+// @desc    Verify OTP (DISABLED)
+router.post('/verify-otp', async (req, res): Promise<void> => {
+  res.status(403).json({
+    status: 'error',
+    message: 'User registration is disabled. Only the default administrator account is permitted to log in.'
+  });
 });
 
 // @route   POST /api/auth/login
@@ -67,17 +39,29 @@ router.post('/register', validate(registerSchema), async (req, res): Promise<voi
 router.post('/login', validate(loginSchema), async (req, res): Promise<void> => {
   try {
     const { email, password } = req.body;
+    const cleanEmail = email.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (!user) {
-      res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+      res.status(401).json({ status: 'error', message: 'Invalid email or password' });
       return;
     }
 
     // Check password
     const isMatch = await verifyPassword(password, user.password);
     if (!isMatch) {
-      res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+      res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+      return;
+    }
+
+    // Check email verification status
+    if (!user.isVerified) {
+      res.status(403).json({
+        status: 'error',
+        message: 'Account email is not verified yet. Please enter the OTP code sent during registration.',
+        unverified: true,
+        otpCode: user.otpCode,
+      });
       return;
     }
 
@@ -85,7 +69,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name },
       JWT_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: '30d' }
     );
 
     // Update lastLogin
@@ -146,6 +130,7 @@ router.get('/me', protect, async (req: AuthenticatedRequest, res: Response): Pro
         email: true,
         name: true,
         designation: true,
+        isVerified: true,
         lastLogin: true,
         createdAt: true,
       },

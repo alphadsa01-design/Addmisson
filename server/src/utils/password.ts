@@ -15,7 +15,7 @@ export const hashPassword = async (password: string): Promise<string> => {
 };
 
 /**
- * Cross-platform password verification using Node.js native crypto timingSafeEqual.
+ * Cross-platform password verification using direct scrypt hex comparison.
  */
 export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
   if (!hash || !hash.includes(':')) return false;
@@ -24,12 +24,7 @@ export const verifyPassword = async (password: string, hash: string): Promise<bo
     const [salt, key] = hash.split(':');
     crypto.scrypt(password, salt, 64, (err, derivedKey) => {
       if (err) return resolve(false);
-      try {
-        const keyBuffer = Buffer.from(key, 'hex');
-        resolve(crypto.timingSafeEqual(keyBuffer, derivedKey));
-      } catch (e) {
-        resolve(false);
-      }
+      resolve(derivedKey.toString('hex') === key);
     });
   });
 };

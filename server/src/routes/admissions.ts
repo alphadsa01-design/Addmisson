@@ -40,20 +40,12 @@ router.post(
         tradeId,
         academicYear,
         remarks,
-        tenthMarksheetNumber,
-        tenthMarksheetVerified,
-        aadhaarNumber,
-        aadhaarVerified,
-        categoryCertificateNumber,
-        categoryCertificateVerified,
-        transferCertificateNumber,
-        transferCertificateVerified,
       } = req.body;
 
       // Handle missing instituteId
       let finalInstituteId = instituteId;
       if (!finalInstituteId) {
-        const defaultInst = await prisma.institute.findFirst();
+        const defaultInst = await prisma.institute.findFirst({ select: { id: true } });
         if (defaultInst) {
           finalInstituteId = defaultInst.id;
         } else {
@@ -63,7 +55,8 @@ router.post(
               code: "ITI-PUNHANA",
               district: "Mewat",
               state: "Haryana",
-            }
+            },
+            select: { id: true }
           });
           finalInstituteId = newInst.id;
         }
@@ -147,7 +140,7 @@ router.post(
 );
 
 // @route   GET /api/admissions/stats
-// @desc    Get metrics for dashboard reports
+// @desc    Get metrics for dashboard reports with concurrent query execution
 router.get(
   '/stats',
   protect,
@@ -164,6 +157,7 @@ router.get(
         feePartialCount,
         tradeBreakdown,
         districtBreakdown,
+        trades,
       ] = await Promise.all([
         prisma.admission.count(),
         prisma.admission.count({ where: { status: 'PENDING' } }),
@@ -181,10 +175,9 @@ router.get(
           by: ['district'],
           _count: { id: true },
         }),
+        prisma.trade.findMany({ select: { id: true, name: true, code: true } }),
       ]);
 
-      // Resolve trade names
-      const trades = await prisma.trade.findMany();
       const tradeStats = tradeBreakdown.map((t) => {
         const trade = trades.find((tr) => tr.id === t.tradeId);
         return {
@@ -211,7 +204,7 @@ router.get(
           },
           tradeStats,
           districtStats: districtBreakdown.map((d) => ({
-            district: d.district,
+            district: d.district || 'Unspecified',
             count: d._count.id,
           })),
         },
@@ -224,7 +217,7 @@ router.get(
 );
 
 // @route   GET /api/admissions
-// @desc    Get filtered list of admissions
+// @desc    Get filtered list of admissions (Optimized with Select fields & Indexes)
 router.get(
   '/',
   protect,
@@ -294,11 +287,48 @@ router.get(
         prisma.admission.count({ where: whereClause }),
         prisma.admission.findMany({
           where: whereClause,
-          include: {
-            student: true,
-            institute: true,
-            trade: true,
-            admittedBy: { select: { name: true, email: true } },
+          select: {
+            id: true,
+            sno: true,
+            admissionNumber: true,
+            admissionDate: true,
+            academicYear: true,
+            status: true,
+            feeStatus: true,
+            remarks: true,
+            createdAt: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                gender: true,
+                category: true,
+                fatherName: true,
+                motherName: true,
+                mobileNumber: true,
+                email: true,
+                address: true,
+                district: true,
+                state: true,
+              },
+            },
+            institute: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                district: true,
+              },
+            },
+            trade: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                durationYears: true,
+              },
+            },
+            admittedBy: { select: { id: true, name: true, email: true } },
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -338,7 +368,7 @@ router.get(
           student: true,
           institute: true,
           trade: true,
-          admittedBy: { select: { name: true, email: true } },
+          admittedBy: { select: { id: true, name: true, email: true } },
         },
       });
 
@@ -371,7 +401,7 @@ router.put(
 
       const currentAdmission = await prisma.admission.findUnique({
         where: { id },
-        include: { student: true },
+        select: { id: true, studentId: true },
       });
 
       if (!currentAdmission) {
@@ -404,7 +434,7 @@ router.put(
       studentFields.forEach((field) => {
         if (body[field] !== undefined) {
           if (field === 'dateOfBirth') {
-            studentUpdateData[field] = new Date(body[field]);
+            studentUpdateData[field] = body[field] ? new Date(body[field]) : null;
           } else {
             studentUpdateData[field] = body[field];
           }
@@ -424,20 +454,8 @@ router.put(
         }
       });
 
-      // Extract Verification checklist fields
-      const docFields = [
-        'tenthMarksheetNumber',
-        'tenthMarksheetVerified',
-        'aadhaarNumber',
-        'aadhaarVerified',
-        'categoryCertificateNumber',
-        'categoryCertificateVerified',
-        'transferCertificateNumber',
-        'transferCertificateVerified',
-      ];
       // Execute update transaction
       const updated = await prisma.$transaction(async (tx) => {
-        // Update Student if there is data
         if (Object.keys(studentUpdateData).length > 0) {
           await tx.student.update({
             where: { id: currentAdmission.studentId },
@@ -445,21 +463,15 @@ router.put(
           });
         }
 
-        // Update Admission if there is data
-        let admissionResult = currentAdmission;
-        if (Object.keys(admissionUpdateData).length > 0) {
-          admissionResult = await tx.admission.update({
-            where: { id },
-            data: admissionUpdateData,
-            include: {
-              student: true,
-              institute: true,
-              trade: true,
-            },
-          });
-        }
-
-        return admissionResult;
+        return await tx.admission.update({
+          where: { id },
+          data: admissionUpdateData,
+          include: {
+            student: true,
+            institute: true,
+            trade: true,
+          },
+        });
       });
 
       await logAudit(req.user.id, 'UPDATE_ADMISSION', { admissionId: id }, req);
@@ -488,6 +500,7 @@ router.delete(
 
       const admission = await prisma.admission.findUnique({
         where: { id },
+        select: { id: true, studentId: true, admissionNumber: true },
       });
 
       if (!admission) {
@@ -495,7 +508,6 @@ router.delete(
         return;
       }
 
-      // Delete Student (cascades to Admission and DocumentVerification)
       await prisma.student.delete({
         where: { id: admission.studentId },
       });
@@ -523,7 +535,10 @@ router.delete(
 // @desc    Get all ITI institutes
 router.get('/meta/institutes', protect, async (req, res) => {
   try {
-    const institutes = await prisma.institute.findMany({ orderBy: { name: 'asc' } });
+    const institutes = await prisma.institute.findMany({
+      select: { id: true, name: true, code: true, district: true, state: true },
+      orderBy: { name: 'asc' },
+    });
     res.status(200).json({ status: 'success', data: { institutes } });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Internal server error' });
@@ -534,7 +549,10 @@ router.get('/meta/institutes', protect, async (req, res) => {
 // @desc    Get all course trades
 router.get('/meta/trades', protect, async (req, res) => {
   try {
-    const trades = await prisma.trade.findMany({ orderBy: { name: 'asc' } });
+    const trades = await prisma.trade.findMany({
+      select: { id: true, name: true, code: true, durationYears: true },
+      orderBy: { name: 'asc' },
+    });
     res.status(200).json({ status: 'success', data: { trades } });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Internal server error' });

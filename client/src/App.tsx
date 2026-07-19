@@ -7,19 +7,16 @@ import Layout from './components/Layout';
 
 // Pages
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Admissions from './pages/Admissions';
 import AdmissionForm from './pages/AdmissionForm';
 import PrintReports from './pages/PrintReports';
-import VerifyEmail from './pages/VerifyEmail';
-
 
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             {/* Public Auth Routes */}
             <Route
@@ -32,22 +29,10 @@ const App: React.FC = () => {
             />
             <Route
               path="/register"
-              element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/verify-email"
-              element={
-                <PublicRoute>
-                  <VerifyEmail />
-                </PublicRoute>
-              }
+              element={<Navigate to="/login" replace />}
             />
 
-            {/* Secure Admin/Staff Routes */}
+            {/* Secure Operator Routes */}
             <Route
               path="/dashboard"
               element={

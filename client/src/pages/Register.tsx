@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
-import { authClient } from '../auth';
+import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, User, Briefcase, AlertCircle, Building, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const { verifyOtp } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,45 +25,22 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      let registered = false;
+      const res = await api.post('/auth/register', {
+        email,
+        password,
+        name,
+        designation,
+      });
 
-      // 1. Register on local backend DB
-      try {
-        await api.post('/auth/register', {
-          email,
-          password,
-          name,
-          designation,
-        });
-        registered = true;
-      } catch (localErr: any) {
-        console.warn('Local register notice:', localErr?.response?.data?.message);
+      if (res.data?.status === 'success') {
+        setSuccess(`Account registered! Enter the 6-digit OTP verification code.`);
+        setShowVerification(true);
+      } else {
+        throw new Error(res.data?.message || 'Registration failed');
       }
-
-      // 2. Register on Neon Auth
-      try {
-        const res = await authClient.signUp.email({
-          email,
-          password,
-          name,
-        });
-        if (!res.error) {
-          registered = true;
-        }
-      } catch (neonErr) {
-        console.warn('Neon Auth register notice:', neonErr);
-      }
-
-      if (!registered) {
-        throw new Error('Registration failed. Please check your information and try again.');
-      }
-
-      setSuccess('Account created successfully! Redirecting to sign in...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Registration failed');
+      const msg = err.response?.data?.message || err.message || 'Registration failed';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -75,31 +53,13 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      let token = '';
-      try {
-        const res = await authClient.emailOtp.verifyEmail({
-          email,
-          otp: code,
-        });
-
-        if (res.data) {
-          const t = (res.data as any).token || (res.data as any).session?.token;
-          if (t) token = t;
-        }
-      } catch (e) {
-        console.warn('Neon OTP verify note:', e);
-      }
-
-      if (token) {
-        localStorage.setItem('token', token);
-      }
-
-      setSuccess('Email verified successfully! Redirecting to secure login...');
+      await verifyOtp(email, code);
+      setSuccess('Email verified successfully! Opening workspace...');
       setTimeout(() => {
-        navigate('/login');
-      }, 1500);
+        navigate('/dashboard', { replace: true });
+      }, 1000);
     } catch (err: any) {
-      setError(err.message || 'Email verification failed.');
+      setError(err.message || 'Email OTP verification failed.');
     } finally {
       setLoading(false);
     }
@@ -127,7 +87,7 @@ const Register: React.FC = () => {
           </svg>
         </div>
 
-        {/* Top Monochrome Accent bar */}
+        {/* Top Accent bar */}
         <div className="absolute top-0 left-0 w-full h-1 bg-slate-900"></div>
 
         {/* Top Header */}
@@ -146,20 +106,24 @@ const Register: React.FC = () => {
         {/* Core Message */}
         <div className="my-16 max-w-xl space-y-5 relative z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-200/50 border border-slate-350 text-slate-700 rounded-full text-xs font-bold">
-            <ShieldCheck size={14} className="text-slate-800" /> Desk Access Registration
+            <ShieldCheck size={14} className="text-slate-800" /> OTP Verified Registration
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight tracking-tight">
             Register New Operator <br />
-            <span className="text-slate-500">Registry Account</span>
+            <span className="text-slate-500">With Email Verification</span>
           </h2>
           <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-            Register your official operator profile. Once registered, your account is granted permission to perform and manage admission entries.
+            Create your desk profile and complete 6-digit Email OTP token verification to activate your account.
           </p>
 
           <div className="pt-4 space-y-3 text-xs text-slate-600 font-semibold">
             <div className="flex items-start gap-3">
               <CheckCircle size={15} className="text-slate-800 shrink-0 mt-0.5" />
-              <p>Verify details with official designation credentials</p>
+              <p>Mandatory 6-Digit Email OTP Verification</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle size={15} className="text-slate-800 shrink-0 mt-0.5" />
+              <p>Node.js Scrypt Security & Encrypted Credentials</p>
             </div>
           </div>
         </div>
@@ -178,7 +142,7 @@ const Register: React.FC = () => {
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Create Desk Account</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">
-                  Fill in your details below to register an account.
+                  Fill in your details below to generate an OTP verification token.
                 </p>
               </div>
 
@@ -255,7 +219,7 @@ const Register: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    Secure Password
+                    Secure Password (min 6 chars)
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
@@ -264,6 +228,7 @@ const Register: React.FC = () => {
                     <input
                       type="password"
                       required
+                      minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -275,9 +240,10 @@ const Register: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                  className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Registering Account...' : 'Register Secure Account'}
+                  {loading ? 'Sending OTP Code...' : 'Register & Send OTP Code'}
+                  <ArrowRight size={14} />
                 </button>
               </form>
 
@@ -295,7 +261,7 @@ const Register: React.FC = () => {
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Confirm OTP Code</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">
-                  We've sent a verification code to <span className="font-bold text-slate-700">{email}</span>.
+                  Enter the 6-digit OTP code generated for <span className="font-bold text-slate-700">{email}</span>.
                 </p>
               </div>
 
@@ -316,15 +282,16 @@ const Register: React.FC = () => {
               <form onSubmit={handleVerify} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    Verification OTP Token
+                    6-Digit Verification Code
                   </label>
                   <input
                     type="text"
                     required
+                    maxLength={6}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Paste email verification code"
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-450 transition form-input-focus"
+                    placeholder="Enter 6-digit code (e.g. 482910)"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-base font-mono font-bold text-center tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 text-slate-900 placeholder-slate-350 transition form-input-focus"
                   />
                 </div>
 
@@ -333,17 +300,17 @@ const Register: React.FC = () => {
                   disabled={loading}
                   className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-slate-900/5 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Confirming OTP...' : 'Verify & Complete Signup'}
+                  {loading ? 'Verifying OTP...' : 'Verify OTP & Activate Account'}
                   <ArrowRight size={14} />
                 </button>
               </form>
 
-              <div className="text-center pt-2">
+              <div className="text-center pt-2 border-t border-slate-100 mt-4">
                 <button
-                  onClick={() => setShowVerification(false)}
+                  onClick={() => { setShowVerification(false); setError(''); }}
                   className="text-xs text-slate-500 font-bold hover:underline"
                 >
-                  Back to Registration Details
+                  ← Back to Registration Details
                 </button>
               </div>
             </>

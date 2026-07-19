@@ -37,35 +37,46 @@ export const seedMetadata = async (): Promise<void> => {
 
     // Seed default Admin user
     const defaultPasswordHash = await hashPassword('admin123');
-    await prisma.user.upsert({
+    const adminUser = await prisma.user.upsert({
       where: { email: 'admin@iti.gov.in' },
       update: {
         password: defaultPasswordHash,
+        isVerified: true,
       },
       create: {
         email: 'admin@iti.gov.in',
         name: 'System Admin',
         password: defaultPasswordHash,
         designation: 'Principal / ITI Administrator',
+        isVerified: true,
       },
     });
 
-    // Seed default Staff user
-    const staffPasswordHash = await hashPassword('staff123');
-    await prisma.user.upsert({
-      where: { email: 'staff@iti.gov.in' },
-      update: {
-        password: staffPasswordHash,
-      },
-      create: {
-        email: 'staff@iti.gov.in',
-        name: 'Admission Staff',
-        password: staffPasswordHash,
-        designation: 'Admission Operator',
+    // Clean up all other users safely to enforce single user account policy
+    const otherUsers = await prisma.user.findMany({
+      where: {
+        email: { not: 'admin@iti.gov.in' },
       },
     });
 
-    console.log('Metadata & default accounts seeded cleanly.');
+    if (otherUsers.length > 0) {
+      console.log(`Cleaning up ${otherUsers.length} extra user accounts...`);
+      const otherUserIds = otherUsers.map((u) => u.id);
+
+      // Re-assign admissions created by these users to the single admin account to preserve DB integrity
+      await prisma.admission.updateMany({
+        where: { admittedById: { in: otherUserIds } },
+        data: { admittedById: adminUser.id },
+      });
+
+      // Now delete the extra users
+      await prisma.user.deleteMany({
+        where: { id: { in: otherUserIds } },
+      });
+      console.log('Extra users deleted successfully.');
+    }
+
+    console.log('Metadata & default admin account seeded cleanly.');
   } catch (error) {
     console.error('Seeding metadata error:', error);
   }

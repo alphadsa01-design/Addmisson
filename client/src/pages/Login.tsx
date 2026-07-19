@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, Building, AlertCircle, ShieldCheck, CheckCircle } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err || 'Invalid email or password');
     } finally {
@@ -82,15 +82,15 @@ const Login: React.FC = () => {
           <div className="pt-4 space-y-3 text-xs text-slate-600 font-semibold">
             <div className="flex items-start gap-3">
               <CheckCircle size={15} className="text-slate-800 shrink-0 mt-0.5" />
-              <p>Argon2 Secure Password Hashing & Encryption Policy</p>
+              <p>Node.js Crypto Scrypt Password Hashing Policy</p>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle size={15} className="text-slate-800 shrink-0 mt-0.5" />
-              <p>Complete Audit Trail of Admissions & Configuration Changes</p>
+              <p>Complete Audit Trail of Admissions & Registry Operations</p>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle size={15} className="text-slate-800 shrink-0 mt-0.5" />
-              <p>Granular Role-Based Access Control (RBAC) System</p>
+              <p>Unified Operator Access & Desk Management</p>
             </div>
           </div>
         </div>
@@ -173,12 +173,10 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          <div className="text-center pt-1 border-t border-slate-100 mt-6">
-            <p className="text-xs text-slate-500 mt-4">
-              New staff member?{' '}
-              <Link to="/register" className="text-slate-900 font-bold hover:underline">
-                Create Registry Account
-              </Link>
+          {/* Access-only notice */}
+          <div className="text-center pt-4 border-t border-slate-100 mt-6">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Authorized Portal Access Only
             </p>
           </div>
         </div>

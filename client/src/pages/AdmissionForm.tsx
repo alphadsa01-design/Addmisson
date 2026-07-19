@@ -198,20 +198,6 @@ const AdmissionForm: React.FC = () => {
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            {/* S.No */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                Serial Number (S.No)
-              </label>
-              <input
-                type="text"
-                {...register('sno')}
-                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-slate-600/10 focus:border-slate-600 focus:outline-none transition"
-                placeholder="E.g., 01"
-              />
-              {errors.sno && <p className="text-[10px] text-rose-600 mt-1.5 font-bold">{errors.sno.message}</p>}
-            </div>
-
             {/* Admission No */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-2">

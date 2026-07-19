@@ -70,8 +70,9 @@ router.get(
       const workbook = new exceljs.Workbook();
       const worksheet = workbook.addWorksheet('Admissions');
 
-      // Setup Columns
+      // Setup Columns with S.No as column 1
       worksheet.columns = [
+        { header: 'S.No', key: 'sno', width: 10 },
         { header: 'Admission No', key: 'admissionNumber', width: 20 },
         { header: 'Student Name', key: 'studentName', width: 25 },
         { header: 'Date of Birth', key: 'dob', width: 15 },
@@ -94,13 +95,14 @@ router.get(
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: '0F172A' }, // Slate-900 / dark blue
+          fgColor: { argb: '0F172A' },
         };
       });
 
-      // Add Data
-      admissions.forEach((a) => {
+      // Add Data with sequential S.No starting from 1
+      admissions.forEach((a, idx) => {
         worksheet.addRow({
+          sno: idx + 1,
           admissionNumber: a.admissionNumber,
           studentName: a.student.name,
           dob: a.student.dateOfBirth ? a.student.dateOfBirth.toISOString().split('T')[0] : '-',
@@ -172,7 +174,6 @@ router.get(
       doc.pipe(res);
 
       // --- PDF CONTENT DESIGN ---
-      // Header Banner
       doc.rect(50, 45, 512, 60).fill('#1E293B');
       doc.fillColor('#FFFFFF').fontSize(14).font('Helvetica-Bold');
       doc.text('GOVERNMENT OF INDIA', 50, 55, { align: 'center', width: 512 });
@@ -229,7 +230,7 @@ router.get(
       doc.text(admission.student.address, rightCol + 100, detailsY + 36, { width: 140 });
 
       doc.text('District / PIN:', rightCol, detailsY + 72);
-      doc.text(`${admission.student.district} - ${admission.student.pinCode}`, rightCol + 100, detailsY + 72);
+      doc.text(`${admission.student.district || '-'} - ${admission.student.pinCode || '-'}`, rightCol + 100, detailsY + 72);
 
       // Separator Line
       doc.moveTo(50, detailsY + 115).lineTo(562, detailsY + 115).strokeColor('#CCCCCC').stroke();
@@ -265,7 +266,6 @@ router.get(
       doc.moveTo(80, 655).lineTo(180, 655).stroke();
       doc.moveTo(380, 655).lineTo(520, 655).stroke();
 
-      // End document stream
       doc.end();
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -337,7 +337,6 @@ router.get(
       // Create PDF
       const doc = new PDFDocument({ layout: 'landscape', margin: 30 });
 
-      // Set response headers
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
@@ -347,22 +346,18 @@ router.get(
       doc.pipe(res);
 
       const drawHeader = (pageNum: number) => {
-        // Top banner
         doc.rect(30, 25, 732, 50).fill('#1E293B');
         doc.fillColor('#FFFFFF').fontSize(12).font('Helvetica-Bold');
         doc.text('GOVERNMENT OF INDIA • DEPARTMENT OF TRAINING & EMPLOYMENT', 30, 32, { align: 'center', width: 732 });
         doc.fontSize(10).font('Helvetica').text('CANDIDATE ADMISSION REGISTRY REPORT', 30, 48, { align: 'center', width: 732 });
 
         doc.fillColor('#000000');
-        
-        // Draw Page number
         doc.fontSize(8).font('Helvetica-Bold').text(`Page: ${pageNum}`, 710, 85);
       };
 
       let pageNum = 1;
       drawHeader(pageNum);
 
-      // Print Filters info
       let filtersStr = `Filters applied: [ Academic Session: ${academicYear || 'All'} ]`;
       if (tradeId) {
         const tradeObj = admissions[0]?.trade;
@@ -378,8 +373,6 @@ router.get(
 
       doc.fontSize(8).font('Helvetica-Oblique').fillColor('#555555').text(filtersStr, 30, 85);
 
-      // Table layout parameters
-      // Total available width: 732
       const columns = [
         { label: 'S.No', width: 35 },
         { label: 'Admission No', width: 80 },
@@ -412,9 +405,8 @@ router.get(
       drawTableHeaders(startY);
       startY += 20;
 
-      // Draw rows
+      // Draw rows with sequential S.No starting from 1
       admissions.forEach((a, index) => {
-        // If row goes near the bottom, add a new page
         if (startY > 500) {
           doc.addPage({ layout: 'landscape', margin: 30 });
           pageNum++;
@@ -424,18 +416,16 @@ router.get(
           startY += 20;
         }
 
-        // Alternate row background coloring
         if (index % 2 === 1) {
           doc.rect(startX, startY, 732, 20).fill('#F8FAFC');
           doc.fillColor('#000000');
         }
 
-        // Draw cells
         let currentX = startX;
         doc.fontSize(8);
 
         const rowData = [
-          a.sno || String(index + 1),
+          String(index + 1),
           a.admissionNumber,
           a.student.name,
           a.student.fatherName,
@@ -452,7 +442,6 @@ router.get(
           currentX += columns[colIdx].width;
         });
 
-        // Draw bottom border for the row
         doc.moveTo(startX, startY + 20).lineTo(startX + 732, startY + 20).strokeColor('#E2E8F0').lineWidth(0.5).stroke();
 
         startY += 20;

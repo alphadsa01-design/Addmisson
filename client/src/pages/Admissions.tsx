@@ -139,7 +139,8 @@ const Admissions: React.FC = () => {
   };
 
   const handlePrintReceipt = (admissionId: string) => {
-    window.open(`/api/reports/pdf/${admissionId}`, '_blank');
+    const token = localStorage.getItem('token') || '';
+    window.open(`/api/reports/pdf/${admissionId}?token=${encodeURIComponent(token)}`, '_blank');
   };
 
   const clearFilters = () => {
@@ -268,10 +269,10 @@ const Admissions: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 ">
-                {admissions.map((a) => (
+                {admissions.map((a, index) => (
                   <tr key={a.id} className="hover:bg-slate-50/40 ">
-                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-600 ">
-                      {a.sno || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-extrabold text-slate-700 font-mono">
+                      #{(page - 1) * 10 + index + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-900 ">
                       {a.admissionNumber}

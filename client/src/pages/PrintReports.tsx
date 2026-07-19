@@ -96,7 +96,9 @@ const PrintReports: React.FC = () => {
   }, [page, academicYear, tradeId]);
 
   const getExportParams = () => {
+    const token = localStorage.getItem('token') || '';
     return new URLSearchParams({
+      ...(token && { token }),
       ...(tradeId && { tradeId }),
       ...(academicYear && { academicYear }),
     });
@@ -248,7 +250,7 @@ const PrintReports: React.FC = () => {
                   ) : (
                     admissions.map((a, index) => (
                       <tr key={a.id} className="hover:bg-slate-50 transition font-medium text-slate-700">
-                        <td className="py-3 px-4 font-bold text-slate-900">{a.sno || (page - 1) * limit + index + 1}</td>
+                        <td className="py-3 px-4 font-extrabold text-slate-900 font-mono">#{(page - 1) * limit + index + 1}</td>
                         <td className="py-3 px-4 font-bold text-slate-900">{a.admissionNumber}</td>
                         <td className="py-3 px-4 font-bold text-slate-900">{a.student.name}</td>
                         <td className="py-3 px-4">{a.student.fatherName}</td>

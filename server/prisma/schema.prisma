@@ -8,15 +8,20 @@ generator client {
 }
 
 model User {
-  id          String      @id @default(uuid())
-  email       String      @unique
-  password    String
-  name        String
-  designation String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  lastLogin   DateTime?
-  admissions  Admission[] @relation("AdmittedBy")
+  id           String      @id @default(uuid())
+  email        String      @unique
+  password     String
+  name         String
+  designation  String?
+  isVerified   Boolean     @default(true)
+  otpCode      String?
+  otpExpiresAt DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  lastLogin    DateTime?
+  admissions   Admission[] @relation("AdmittedBy")
+
+  @@index([email])
 }
 
 model Institute {
@@ -65,6 +70,7 @@ model Student {
   @@index([mobileNumber])
   @@index([gender])
   @@index([category])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Admission {
@@ -93,6 +99,9 @@ model Admission {
   @@index([admissionDate])
   @@index([tradeId])
   @@index([instituteId])
+  @@index([academicYear, tradeId])
+  @@index([createdAt(sort: Desc)])
+  @@index([admittedById])
 }
 
 enum AdmissionStatus {

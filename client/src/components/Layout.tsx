@@ -119,6 +119,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </nav>
           </div>
+
+          <div className="pt-4 border-t border-slate-100 text-center">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Developed by <span className="text-slate-800 font-extrabold">Mayank</span>
+            </p>
+          </div>
         </aside>
 
         {/* Mobile Navigation Drawer */}
@@ -179,6 +185,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <LogOut size={16} />
                   Log Out
                 </button>
+                <div className="mt-3 pt-3 border-t border-slate-100 text-center">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Developed by <span className="text-slate-800 font-extrabold">Mayank</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
