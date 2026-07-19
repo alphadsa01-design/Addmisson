@@ -8,35 +8,16 @@ generator client {
 }
 
 model User {
-  id                    String           @id @default(uuid())
-  email                 String           @unique
-  password              String
-  name                  String
-  role                  Role             @default(STAFF)
-  status                Status           @default(APPROVED) // Set default to APPROVED, but admin requests can change roles
-  designation           String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  lastLogin             DateTime?
-  loginHistories        LoginHistory[]
-  auditLogs             AuditLog[]
-  adminRequestsCreated  AdminRequest[]   @relation("CreatedRequests")
-  adminRequestsReviewed AdminRequest[]   @relation("ReviewedRequests")
-  admissions            Admission[]      @relation("AdmittedBy")
-}
-
-model AdminRequest {
-  id            String        @id @default(uuid())
-  userId        String
-  user          User          @relation("CreatedRequests", fields: [userId], references: [id], onDelete: Cascade)
-  requestedRole Role
-  status        RequestStatus @default(PENDING)
-  remarks       String?
-  reviewedById  String?
-  reviewedBy    User?         @relation("ReviewedRequests", fields: [reviewedById], references: [id])
-  reviewedAt    DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id          String      @id @default(uuid())
+  email       String      @unique
+  password    String
+  name        String
+  role        Role        @default(STAFF)
+  designation String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  lastLogin   DateTime?
+  admissions  Admission[] @relation("AdmittedBy")
 }
 
 model Institute {
@@ -88,25 +69,24 @@ model Student {
 }
 
 model Admission {
-  id                   String                @id @default(uuid())
-  sno                  String?
-  admissionNumber      String                @unique // E.g., ITI/2026/0001
-  admissionDate        DateTime?
-  studentId            String                @unique
-  student              Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  instituteId          String
-  institute            Institute             @relation(fields: [instituteId], references: [id])
-  tradeId              String
-  trade                Trade                 @relation(fields: [tradeId], references: [id])
-  academicYear         String // e.g. "2026-2027"
-  status               AdmissionStatus       @default(PENDING)
-  feeStatus            FeeStatus             @default(UNPAID)
-  admittedById         String
-  admittedBy           User                  @relation("AdmittedBy", fields: [admittedById], references: [id])
-  remarks              String?
-  documentVerification DocumentVerification?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  id              String          @id @default(uuid())
+  sno             String?
+  admissionNumber String          @unique // E.g., ITI/2026/0001
+  admissionDate   DateTime?
+  studentId       String          @unique
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instituteId     String
+  institute       Institute       @relation(fields: [instituteId], references: [id])
+  tradeId         String
+  trade           Trade           @relation(fields: [tradeId], references: [id])
+  academicYear    String // e.g. "2026-2027"
+  status          AdmissionStatus @default(PENDING)
+  feeStatus       FeeStatus       @default(UNPAID)
+  admittedById    String
+  admittedBy      User            @relation("AdmittedBy", fields: [admittedById], references: [id])
+  remarks         String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([academicYear])
   @@index([status])
@@ -116,61 +96,10 @@ model Admission {
   @@index([instituteId])
 }
 
-model DocumentVerification {
-  id                          String    @id @default(uuid())
-  admissionId                 String    @unique
-  admission                   Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
-  tenthMarksheetNumber        String?
-  tenthMarksheetVerified      Boolean   @default(false)
-  aadhaarNumber               String?
-  aadhaarVerified             Boolean   @default(false)
-  categoryCertificateNumber  String?
-  categoryCertificateVerified Boolean   @default(false)
-  transferCertificateNumber  String?
-  transferCertificateVerified Boolean   @default(false)
-  verifiedById               String?
-  verifiedAt                 DateTime?
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
-}
-
-model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String
-  details   String   @db.Text // JSON metadata
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-}
-
-model LoginHistory {
-  id        String      @id @default(uuid())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ipAddress String?
-  userAgent String?
-  status    LoginStatus
-  createdAt DateTime    @default(now())
-}
-
 enum Role {
   STAFF
   ADMIN
   SUPER_ADMIN
-}
-
-enum Status {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 enum AdmissionStatus {
@@ -184,9 +113,4 @@ enum FeeStatus {
   PAID
   UNPAID
   PARTIAL
-}
-
-enum LoginStatus {
-  SUCCESS
-  FAILURE
 }

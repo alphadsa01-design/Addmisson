@@ -1,10 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jose from 'jose';
+import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 
 // Create Remote JWK Set for Neon Auth JWKS token verification
 const JWKS_URL = process.env.JWKS_URL || 'https://ep-lucky-dust-aveiwjlq.neonauth.c-11.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
-const JWKS = jose.createRemoteJWKSet(new URL(JWKS_URL));
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured';
+
+let JWKS: any = null;
+try {
+  JWKS = jose.createRemoteJWKSet(new URL(JWKS_URL));
+} catch (e) {
+  console.error('Failed to initialize JWKS remote set:', e);
+}
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -28,6 +36,11 @@ export const protect = async (
       token = req.headers.authorization.split(' ')[1];
     }
 
+    // Fallback to cookie
+    if (!token && (req as any).cookies?.token) {
+      token = (req as any).cookies.token;
+    }
+
     if (!token) {
       res.status(401).json({
         status: 'error',
@@ -36,14 +49,33 @@ export const protect = async (
       return;
     }
 
-    // Verify token using Neon Auth JWKS
-    const { payload } = await jose.jwtVerify(token, JWKS);
-    
-    const email = payload.email as string;
+    let email: string | undefined;
+    let name: string | undefined;
+
+    // 1. Try local JWT_SECRET verification first
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      email = decoded.email;
+      name = decoded.name;
+    } catch (localErr) {
+      // Local verification failed
+    }
+
+    // 2. Try Neon Auth JWKS verification as fallback
+    if (!email && JWKS) {
+      try {
+        const { payload } = await jose.jwtVerify(token, JWKS);
+        email = payload.email as string;
+        name = (payload.name as string) || (payload.preferred_username as string);
+      } catch (jwksErr) {
+        // JWKS verification failed
+      }
+    }
+
     if (!email) {
       res.status(401).json({
         status: 'error',
-        message: 'Invalid token payload: missing email.',
+        message: 'Invalid or expired token. Please log in again.',
       });
       return;
     }
@@ -56,7 +88,7 @@ export const protect = async (
       user = await prisma.user.create({
         data: {
           email,
-          name: (payload.name as string) || (payload.preferred_username as string) || email.split('@')[0],
+          name: name || email.split('@')[0],
           password: 'NEON_AUTH_MANAGED_PASS', // Dummy password
           role: 'STAFF',
           designation: 'Operator',

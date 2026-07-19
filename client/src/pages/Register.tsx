@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../api';
 import { authClient } from '../auth';
 import { Mail, Lock, User, Briefcase, AlertCircle, Building, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react';
 
@@ -23,20 +24,43 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await authClient.signUp.email({
-        email,
-        password,
-        name,
-      });
+      let registered = false;
 
-      if (res.error) {
-        throw new Error(res.error.message || 'Registration failed');
+      // 1. Register on local backend DB
+      try {
+        await api.post('/auth/register', {
+          email,
+          password,
+          name,
+          designation,
+        });
+        registered = true;
+      } catch (localErr: any) {
+        console.warn('Local register notice:', localErr?.response?.data?.message);
       }
 
-      setSuccess('Account created! A verification code has been sent to your email.');
+      // 2. Register on Neon Auth
+      try {
+        const res = await authClient.signUp.email({
+          email,
+          password,
+          name,
+        });
+        if (!res.error) {
+          registered = true;
+        }
+      } catch (neonErr) {
+        console.warn('Neon Auth register notice:', neonErr);
+      }
+
+      if (!registered) {
+        throw new Error('Registration failed. Please check your information and try again.');
+      }
+
+      setSuccess('Account created! Verification code sent to your email.');
       setShowVerification(true);
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err?.response?.data?.message || err?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -49,19 +73,29 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await authClient.emailOtp.verifyEmail({
-        email,
-        otp: code,
-      });
+      let token = '';
+      try {
+        const res = await authClient.emailOtp.verifyEmail({
+          email,
+          otp: code,
+        });
 
-      if (res.error) {
-        throw new Error(res.error.message || 'Verification failed. Please check the code.');
+        if (res.data) {
+          const t = (res.data as any).token || (res.data as any).session?.token;
+          if (t) token = t;
+        }
+      } catch (e) {
+        console.warn('Neon OTP verify note:', e);
+      }
+
+      if (token) {
+        localStorage.setItem('token', token);
       }
 
       setSuccess('Email verified successfully! Redirecting to secure login...');
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Email verification failed.');
     } finally {

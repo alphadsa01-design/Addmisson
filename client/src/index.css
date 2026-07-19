@@ -11,9 +11,15 @@
 }
 
 @layer base {
-  body {
+  html, body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Touch momentum scrolling for iOS/Android */
+  .overflow-x-auto, .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
 

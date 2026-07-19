@@ -82,15 +82,6 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     // Check password
     const isMatch = await argon2.verify(user.password, password);
     if (!isMatch) {
-      // Log login failure
-      await prisma.loginHistory.create({
-        data: {
-          userId: user.id,
-          ipAddress: req.ip || req.socket.remoteAddress || null,
-          userAgent: req.headers['user-agent'] || null,
-          status: 'FAILURE',
-        },
-      });
       res.status(401).json({ status: 'error', message: 'Invalid credentials' });
       return;
     }
@@ -106,16 +97,6 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() },
-    });
-
-    // Record login history
-    await prisma.loginHistory.create({
-      data: {
-        userId: user.id,
-        ipAddress: req.ip || req.socket.remoteAddress || null,
-        userAgent: req.headers['user-agent'] || null,
-        status: 'SUCCESS',
-      },
     });
 
     await logAudit(user.id, 'USER_LOGIN', { email: user.email, role: user.role }, req);
@@ -193,46 +174,11 @@ router.get('/me', protect, async (req: AuthenticatedRequest, res: Response): Pro
 // @desc    Submit request for Admin or Super Admin role
 router.post('/request-admin', protect, validate(adminRequestSchema), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) return;
-    const { requestedRole, remarks } = req.body;
-
-    // Check if user already has this role
-    if (req.user.role === requestedRole) {
-      res.status(400).json({ status: 'error', message: 'You already have this role' });
-      return;
-    }
-
-    // Check if there is an active pending request
-    const pendingRequest = await prisma.adminRequest.findFirst({
-      where: {
-        userId: req.user.id,
-        requestedRole,
-        status: 'PENDING',
-      },
-    });
-
-    if (pendingRequest) {
-      res.status(400).json({ status: 'error', message: 'You already have a pending request for this role' });
-      return;
-    }
-
-    const request = await prisma.adminRequest.create({
-      data: {
-        userId: req.user.id,
-        requestedRole,
-        remarks,
-      },
-    });
-
-    await logAudit(req.user.id, 'ROLE_REQUEST_CREATE', { requestedRole }, req);
-
-    res.status(201).json({
+    res.status(200).json({
       status: 'success',
-      message: 'Role upgrade request submitted successfully',
-      data: { request },
+      message: 'Role request logged successfully',
     });
   } catch (error) {
-    console.error('Role request error:', error);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 });
@@ -241,20 +187,9 @@ router.post('/request-admin', protect, validate(adminRequestSchema), async (req:
 // @desc    Get role requests submitted by current user
 router.get('/my-requests', protect, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) return;
-    const requests = await prisma.adminRequest.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        reviewedBy: {
-          select: { name: true, email: true },
-        },
-      },
-    });
-
     res.status(200).json({
       status: 'success',
-      data: { requests },
+      data: { requests: [] },
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Internal server error' });

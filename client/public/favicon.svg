@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <!-- Background Shield/Rounded Rect -->
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.6"/>
+  <!-- Government Building Icon -->
+  <path d="M32 10 L52 22 L12 22 Z" fill="url(#gold)"/>
+  <rect x="16" y="24" width="32" height="4" fill="#f8fafc" rx="1"/>
+  <!-- Pillars -->
+  <rect x="18" y="30" width="4" height="16" fill="#f8fafc" rx="1"/>
+  <rect x="27" y="30" width="4" height="16" fill="#f8fafc" rx="1"/>
+  <rect x="33" y="30" width="4" height="16" fill="#f8fafc" rx="1"/>
+  <rect x="42" y="30" width="4" height="16" fill="#f8fafc" rx="1"/>
+  <!-- Base -->
+  <rect x="14" y="48" width="36" height="5" fill="url(#gold)" rx="1.5"/>
+</svg>

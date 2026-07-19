@@ -151,7 +151,6 @@ router.get(
           student: true,
           institute: true,
           trade: true,
-          documentVerification: true,
         },
       });
 
@@ -254,38 +253,6 @@ router.get(
 
       // Separator Line
       doc.moveTo(50, allocY + 60).lineTo(562, allocY + 60).strokeColor('#CCCCCC').stroke();
-
-      // Section: Document Checklist
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1E293B').text('3. VERIFIED CHECKLIST & METADATA', 50, allocY + 70);
-      doc.fillColor('#000000').fontSize(10).font('Helvetica');
-
-      const docCheckY = allocY + 90;
-      const v = admission.documentVerification;
-
-      doc.text('Aadhaar Card No:', leftCol, docCheckY);
-      doc.text(v?.aadhaarNumber || 'N/A', leftCol + 120, docCheckY);
-      doc.font('Helvetica-Bold').fillColor(v?.aadhaarVerified ? '#15803D' : '#B91C1C')
-         .text(v?.aadhaarVerified ? '[VERIFIED]' : '[PENDING]', leftCol + 220, docCheckY).fillColor('#000000').font('Helvetica');
-
-      doc.text('10th Marksheet No:', leftCol, docCheckY + 18);
-      doc.text(v?.tenthMarksheetNumber || 'N/A', leftCol + 120, docCheckY + 18);
-      doc.font('Helvetica-Bold').fillColor(v?.tenthMarksheetVerified ? '#15803D' : '#B91C1C')
-         .text(v?.tenthMarksheetVerified ? '[VERIFIED]' : '[PENDING]', leftCol + 220, docCheckY + 18).fillColor('#000000').font('Helvetica');
-
-      if (v?.categoryCertificateNumber) {
-        doc.text('Category Cert No:', leftCol, docCheckY + 36);
-        doc.text(v.categoryCertificateNumber, leftCol + 120, docCheckY + 36);
-        doc.font('Helvetica-Bold').fillColor(v.categoryCertificateVerified ? '#15803D' : '#B91C1C')
-           .text(v.categoryCertificateVerified ? '[VERIFIED]' : '[PENDING]', leftCol + 220, docCheckY + 36).fillColor('#000000').font('Helvetica');
-      }
-
-      if (v?.transferCertificateNumber) {
-        const tcOffset = v.categoryCertificateNumber ? 54 : 36;
-        doc.text('Transfer Cert No:', leftCol, docCheckY + tcOffset);
-        doc.text(v.transferCertificateNumber, leftCol + 120, docCheckY + tcOffset);
-        doc.font('Helvetica-Bold').fillColor(v.transferCertificateVerified ? '#15803D' : '#B91C1C')
-           .text(v.transferCertificateVerified ? '[VERIFIED]' : '[PENDING]', leftCol + 220, docCheckY + tcOffset).fillColor('#000000').font('Helvetica');
-      }
 
       // Footnote & signatures
       doc.fontSize(8).font('Helvetica-Oblique').fillColor('#666666')

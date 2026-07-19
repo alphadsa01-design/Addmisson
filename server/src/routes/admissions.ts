@@ -125,24 +125,7 @@ router.post(
           },
         });
 
-        // 4. Create Document Verification
-        const verification = await tx.documentVerification.create({
-          data: {
-            admissionId: admission.id,
-            tenthMarksheetNumber: tenthMarksheetNumber || null,
-            tenthMarksheetVerified: tenthMarksheetVerified || false,
-            aadhaarNumber: aadhaarNumber || null,
-            aadhaarVerified: aadhaarVerified || false,
-            categoryCertificateNumber: categoryCertificateNumber || null,
-            categoryCertificateVerified: categoryCertificateVerified || false,
-            transferCertificateNumber: transferCertificateNumber || null,
-            transferCertificateVerified: transferCertificateVerified || false,
-            verifiedById: (tenthMarksheetVerified && aadhaarVerified) ? req.user!.id : null,
-            verifiedAt: (tenthMarksheetVerified && aadhaarVerified) ? new Date() : null,
-          },
-        });
-
-        return { student, admission, verification };
+        return { student, admission };
       });
 
       await logAudit(
@@ -316,7 +299,6 @@ router.get(
             student: true,
             institute: true,
             trade: true,
-            documentVerification: true,
             admittedBy: { select: { name: true, email: true } },
           },
           orderBy: { createdAt: 'desc' },
@@ -357,11 +339,6 @@ router.get(
           student: true,
           institute: true,
           trade: true,
-          documentVerification: {
-            include: {
-              // Option to fetch who verified it
-            }
-          },
           admittedBy: { select: { name: true, email: true } },
         },
       });
@@ -396,7 +373,7 @@ router.put(
 
       const currentAdmission = await prisma.admission.findUnique({
         where: { id },
-        include: { student: true, documentVerification: true },
+        include: { student: true },
       });
 
       if (!currentAdmission) {
@@ -460,13 +437,6 @@ router.put(
         'transferCertificateNumber',
         'transferCertificateVerified',
       ];
-      const docUpdateData: any = {};
-      docFields.forEach((field) => {
-        if (body[field] !== undefined) {
-          docUpdateData[field] = body[field];
-        }
-      });
-
       // Execute update transaction
       const updated = await prisma.$transaction(async (tx) => {
         // Update Student if there is data
@@ -474,25 +444,6 @@ router.put(
           await tx.student.update({
             where: { id: currentAdmission.studentId },
             data: studentUpdateData,
-          });
-        }
-
-        // Update Verification if there is data
-        if (Object.keys(docUpdateData).length > 0) {
-          const checkVerified = {
-            tenthMarksheetVerified: docUpdateData.tenthMarksheetVerified !== undefined ? docUpdateData.tenthMarksheetVerified : currentAdmission.documentVerification?.tenthMarksheetVerified,
-            aadhaarVerified: docUpdateData.aadhaarVerified !== undefined ? docUpdateData.aadhaarVerified : currentAdmission.documentVerification?.aadhaarVerified,
-          };
-
-          const isFullyVerified = checkVerified.tenthMarksheetVerified && checkVerified.aadhaarVerified;
-
-          await tx.documentVerification.update({
-            where: { admissionId: id },
-            data: {
-              ...docUpdateData,
-              verifiedById: isFullyVerified ? req.user!.id : null,
-              verifiedAt: isFullyVerified ? new Date() : null,
-            },
           });
         }
 
@@ -506,7 +457,6 @@ router.put(
               student: true,
               institute: true,
               trade: true,
-              documentVerification: true,
             },
           });
         }

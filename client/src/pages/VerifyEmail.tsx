@@ -36,10 +36,17 @@ const VerifyEmail: React.FC = () => {
         throw new Error(res.error.message || 'Verification failed. Please check the code.');
       }
 
+      if (res.data) {
+        const token = (res.data as any).token || (res.data as any).session?.token;
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+      }
+
       setSuccess('Email verified successfully! Redirecting to secure login...');
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Email verification failed.');
     } finally {

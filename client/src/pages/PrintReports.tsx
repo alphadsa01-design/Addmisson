@@ -132,11 +132,11 @@ const PrintReports: React.FC = () => {
             Apply session and trade filters to preview, print landscape tables, or export Excel spreadsheets.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 transition shadow-2xs"
           >
             <FileSpreadsheet size={16} className="text-emerald-600" />
             Export Excel
@@ -144,7 +144,7 @@ const PrintReports: React.FC = () => {
           <button
             type="button"
             onClick={handlePrintPDF}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-850 text-white font-bold rounded-xl text-xs shadow-md transition"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-850 text-white font-bold rounded-xl text-xs shadow-xs transition"
           >
             <Printer size={16} />
             Print Report (PDF)

@@ -45,12 +45,6 @@ interface Admission {
     name: string;
     code: string;
   };
-  documentVerification?: {
-    tenthMarksheetNumber?: string | null;
-    tenthMarksheetVerified: boolean;
-    aadhaarNumber?: string | null;
-    aadhaarVerified: boolean;
-  } | null;
 }
 
 const Admissions: React.FC = () => {
@@ -382,22 +376,22 @@ const Admissions: React.FC = () => {
 
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-700 ">
               {/* Primary Info Banner */}
-              <div className="grid grid-cols-4 gap-4 bg-slate-50  border border-slate-200  p-4 rounded-xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 bg-slate-50 border border-slate-200 p-3.5 sm:p-4 rounded-xl">
                 <div>
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">S.No</span>
-                  <span className="text-xs font-extrabold text-slate-900 ">{selectedAdmission.sno || '-'}</span>
+                  <span className="text-xs font-extrabold text-slate-900">{selectedAdmission.sno || '-'}</span>
                 </div>
                 <div>
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Admission No</span>
-                  <span className="text-xs font-extrabold text-slate-900 ">{selectedAdmission.admissionNumber}</span>
+                  <span className="text-xs font-extrabold text-slate-900">{selectedAdmission.admissionNumber}</span>
                 </div>
                 <div>
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Session</span>
-                  <span className="text-xs font-extrabold text-slate-900 ">{selectedAdmission.academicYear}</span>
+                  <span className="text-xs font-extrabold text-slate-900">{selectedAdmission.academicYear}</span>
                 </div>
                 <div>
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Date of Admission</span>
-                  <span className="text-xs font-extrabold text-slate-900 ">
+                  <span className="text-xs font-extrabold text-slate-900">
                     {selectedAdmission.admissionDate ? new Date(selectedAdmission.admissionDate).toLocaleDateString() : '-'}
                   </span>
                 </div>
@@ -405,66 +399,67 @@ const Admissions: React.FC = () => {
 
               {/* Candidate Info */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100  pb-1.5">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5">
                   Candidate Profile Details
                 </h4>
-                <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-xs">
                   <div>
                     <span className="text-slate-400 block">Candidate Name:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.name}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.name}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Father's Name:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.fatherName}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.fatherName}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Gender:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.gender}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.gender}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Category:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.category}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.category}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Mobile No:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.mobileNumber}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.mobileNumber}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Residential Address:</span>
-                    <span className="font-semibold text-slate-900 ">{selectedAdmission.student.address}</span>
+                    <span className="font-semibold text-slate-900">{selectedAdmission.student.address}</span>
                   </div>
                 </div>
               </div>
 
               {/* Allocation Info */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100  pb-1.5">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1.5">
                   Course Allocation
                 </h4>
                 <div className="grid grid-cols-1 gap-y-3 text-xs">
                   <div>
                     <span className="text-slate-400 block">Allocated Trade:</span>
-                    <span className="font-semibold text-slate-900 ">
+                    <span className="font-semibold text-slate-900">
                       {selectedAdmission.trade.name}
                     </span>
                   </div>
                 </div>
               </div>
+
             </div>
 
-            <div className="p-6 border-t border-slate-200  bg-slate-50  flex justify-end gap-2">
+            <div className="p-4 sm:p-6 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row justify-end gap-2">
+              <button
+                onClick={() => setSelectedAdmission(null)}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-100 transition"
+              >
+                Close Profile
+              </button>
               <button
                 onClick={() => handlePrintReceipt(selectedAdmission.id)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition shadow-xs"
               >
                 <Printer size={14} />
                 Print Acknowledgement
-              </button>
-              <button
-                onClick={() => setSelectedAdmission(null)}
-                className="px-4 py-2 bg-white  border border-slate-200  text-slate-600  font-bold rounded-xl text-xs hover:bg-slate-100  transition"
-              >
-                Close Profile
               </button>
             </div>
           </div>
