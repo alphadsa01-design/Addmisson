@@ -47,14 +47,22 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
       return;
     }
 
-    // Check password
-    let isMatch = await verifyPassword(password, user.password);
-    if (!isMatch && cleanEmail === 'admin@iti.gov.in' && (password === 'admin' || password === 'admin123')) {
-      isMatch = true;
-    }
-    if (!isMatch) {
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' });
-      return;
+    // Admin account: use env-var password (bypasses hash — works reliably on serverless)
+    const ADMIN_EMAIL = 'admin@iti.gov.in';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+
+    if (cleanEmail === ADMIN_EMAIL) {
+      if (password !== ADMIN_PASSWORD) {
+        res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+        return;
+      }
+    } else {
+      // For any other user, compare against stored hash
+      const isMatch = await verifyPassword(password, user.password);
+      if (!isMatch) {
+        res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+        return;
+      }
     }
 
     // Check email verification status
