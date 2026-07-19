@@ -1,11 +1,11 @@
 import { Router, Response } from 'express';
-import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 import { validate } from '../middleware/validate';
 import { protect, AuthenticatedRequest } from '../middleware/auth';
 import { registerSchema, loginSchema, adminRequestSchema } from '../schemas/auth';
 import { logAudit } from '../middleware/audit';
+import { hashPassword, verifyPassword } from '../utils/password';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured';
@@ -30,7 +30,7 @@ router.post('/register', validate(registerSchema), async (req, res): Promise<voi
     }
 
     // Hash password
-    const hashedPassword = await argon2.hash(password);
+    const hashedPassword = await hashPassword(password);
 
     // Every user is registered with STAFF role (normal operator)
     const role = 'STAFF';
@@ -80,7 +80,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     }
 
     // Check password
-    const isMatch = await argon2.verify(user.password, password);
+    const isMatch = await verifyPassword(password, user.password);
     if (!isMatch) {
       res.status(401).json({ status: 'error', message: 'Invalid credentials' });
       return;

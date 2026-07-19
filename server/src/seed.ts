@@ -1,5 +1,5 @@
-import argon2 from 'argon2';
 import prisma from './prisma';
+import { hashPassword } from './utils/password';
 
 export const seedMetadata = async (): Promise<void> => {
   try {
@@ -36,10 +36,12 @@ export const seedMetadata = async (): Promise<void> => {
     }
 
     // Seed default Admin user
-    const defaultPasswordHash = await argon2.hash('admin123');
+    const defaultPasswordHash = await hashPassword('admin123');
     await prisma.user.upsert({
       where: { email: 'admin@iti.gov.in' },
-      update: {},
+      update: {
+        password: defaultPasswordHash,
+      },
       create: {
         email: 'admin@iti.gov.in',
         name: 'System Admin',
@@ -50,10 +52,12 @@ export const seedMetadata = async (): Promise<void> => {
     });
 
     // Seed default Staff user
-    const staffPasswordHash = await argon2.hash('staff123');
+    const staffPasswordHash = await hashPassword('staff123');
     await prisma.user.upsert({
       where: { email: 'staff@iti.gov.in' },
-      update: {},
+      update: {
+        password: staffPasswordHash,
+      },
       create: {
         email: 'staff@iti.gov.in',
         name: 'Admission Staff',
