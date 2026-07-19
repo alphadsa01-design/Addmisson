@@ -1,18 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import * as jose from 'jose';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 
-// Create Remote JWK Set for Neon Auth JWKS token verification
 const JWKS_URL = process.env.JWKS_URL || 'https://ep-lucky-dust-aveiwjlq.neonauth.c-11.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured';
 
 let JWKS: any = null;
-try {
-  JWKS = jose.createRemoteJWKSet(new URL(JWKS_URL));
-} catch (e) {
-  console.error('Failed to initialize JWKS remote set:', e);
-}
+const getJWKS = async () => {
+  if (!JWKS) {
+    try {
+      const { createRemoteJWKSet } = await import('jose');
+      JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+    } catch (e) {
+      console.warn('JWKS dynamic import notice:', e);
+    }
+  }
+  return JWKS;
+};
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -60,14 +64,18 @@ export const protect = async (
       // Local verification failed
     }
 
-    // 2. Try Neon Auth JWKS verification as fallback
-    if (!email && JWKS) {
+    // 2. Try Neon Auth JWKS verification as fallback via dynamic ESM import
+    if (!email) {
       try {
-        const { payload } = await jose.jwtVerify(token, JWKS);
-        email = payload.email as string;
-        name = (payload.name as string) || (payload.preferred_username as string);
+        const jwks = await getJWKS();
+        if (jwks) {
+          const { jwtVerify } = await import('jose');
+          const { payload } = await jwtVerify(token, jwks);
+          email = payload.email as string;
+          name = (payload.name as string) || (payload.preferred_username as string);
+        }
       } catch (jwksErr) {
-        // JWKS verification failed
+        // JWKS verification fallback failed
       }
     }
 
