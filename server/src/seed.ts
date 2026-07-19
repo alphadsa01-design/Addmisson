@@ -35,22 +35,29 @@ export const seedMetadata = async (): Promise<void> => {
       });
     }
 
-    // Seed default Admin user
-    const defaultPasswordHash = await hashPassword('admin');
-    const adminUser = await prisma.user.upsert({
-      where: { email: 'admin@iti.gov.in' },
-      update: {
-        password: defaultPasswordHash,
-        isVerified: true,
-      },
-      create: {
-        email: 'admin@iti.gov.in',
-        name: 'System Admin',
-        password: defaultPasswordHash,
-        designation: 'Principal / ITI Administrator',
-        isVerified: true,
-      },
-    });
+    // Seed default Admin user — only hash once on first create, never overwrite on restart
+    const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@iti.gov.in' } });
+
+    let adminUser;
+    if (existingAdmin) {
+      // User already exists — only ensure isVerified is true, never touch the password
+      adminUser = await prisma.user.update({
+        where: { email: 'admin@iti.gov.in' },
+        data: { isVerified: true },
+      });
+    } else {
+      // First-time creation — hash and store password
+      const defaultPasswordHash = await hashPassword('admin');
+      adminUser = await prisma.user.create({
+        data: {
+          email: 'admin@iti.gov.in',
+          name: 'System Admin',
+          password: defaultPasswordHash,
+          designation: 'Principal / ITI Administrator',
+          isVerified: true,
+        },
+      });
+    }
 
     // Clean up all other users safely to enforce single user account policy
     const otherUsers = await prisma.user.findMany({
