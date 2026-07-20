@@ -18,6 +18,9 @@ import { seedMetadata } from './seed';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust Vercel reverse proxy for express-rate-limit & IP detection
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet());
 app.use(
@@ -78,7 +81,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled Error:', err);
   res.status(500).json({
     status: 'error',
-    message: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    message: err?.message || 'Internal server error',
   });
 });
 

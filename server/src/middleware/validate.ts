@@ -23,7 +23,7 @@ export const validate = (schema: AnyZodObject) => {
         });
         return;
       }
-      res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+      next(error);
     }
   };
 };
