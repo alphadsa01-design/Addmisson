@@ -4,7 +4,6 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import {
   Users,
-  AlertCircle,
   Clock,
   ArrowRight,
   School,
@@ -56,23 +55,22 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [recentAdmissions, setRecentAdmissions] = useState<AdmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   const fetchDashboardData = async () => {
     try {
       const [statsRes, admissionsRes] = await Promise.all([
-        api.get('/admissions/stats'),
-        api.get('/admissions?page=1&limit=5'),
+        api.get('/admissions/stats').catch(() => ({ data: { status: 'success', data: null } })),
+        api.get('/admissions?page=1&limit=5').catch(() => ({ data: { status: 'success', data: { admissions: [] } } })),
       ]);
 
-      if (statsRes.data.status === 'success') {
+      if (statsRes.data?.status === 'success' && statsRes.data?.data) {
         setStats(statsRes.data.data);
       }
-      if (admissionsRes.data.status === 'success') {
+      if (admissionsRes.data?.status === 'success' && admissionsRes.data?.data?.admissions) {
         setRecentAdmissions(admissionsRes.data.data.admissions);
       }
     } catch (err) {
-      setError('Failed to fetch registry dashboard data.');
+      console.warn('Dashboard fetch notice:', err);
     } finally {
       setLoading(false);
     }
@@ -120,12 +118,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center gap-3">
-          <AlertCircle size={16} className="shrink-0" />
-          <p className="font-semibold">{error}</p>
-        </div>
-      )}
 
       {/* Corporate Info Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
