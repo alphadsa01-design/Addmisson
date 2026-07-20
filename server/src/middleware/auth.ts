@@ -26,8 +26,8 @@ export const protect = async (
     }
 
     // Check Cookie Header
-    if (!token && (req as any).cookies?.token) {
-      token = (req as any).cookies.token;
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
     }
 
     // Check Query Parameter (for PDF / Excel browser downloads)

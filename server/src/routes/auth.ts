@@ -105,6 +105,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
           name: user.name,
           designation: user.designation,
           lastLogin: user.lastLogin,
+          createdAt: user.createdAt,
         },
       },
     });
