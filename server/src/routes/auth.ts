@@ -41,7 +41,14 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     const { email, password } = req.body;
     const cleanEmail = email.trim().toLowerCase();
 
-    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    let user = null;
+    try {
+      user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    } catch (dbErr) {
+      console.warn('Initial DB query failed, retrying after brief delay...', dbErr);
+      await new Promise((res) => setTimeout(res, 600));
+      user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    }
 
     // Admin account: use env-var password (bypasses hash — works reliably on serverless)
     const ADMIN_EMAIL = 'admin@iti.gov.in';
@@ -98,11 +105,11 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
       { expiresIn: '30d' }
     );
 
-    // Update lastLogin
+    // Update lastLogin safely (non-blocking)
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() },
-    });
+    }).catch((err) => console.error('Failed to update lastLogin:', err));
 
     await logAudit(user.id, 'USER_LOGIN', { email: user.email }, req);
 
@@ -124,9 +131,12 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
         },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
+    res.status(500).json({
+      status: 'error',
+      message: process.env.NODE_ENV === 'production' ? (error?.message || 'Database connection error') : error.message,
+    });
   }
 });
 

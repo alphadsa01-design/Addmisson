@@ -10,8 +10,6 @@ const prisma =
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prismaSingleton = prisma;
-}
+globalThis.prismaSingleton = prisma;
 
 export default prisma;
