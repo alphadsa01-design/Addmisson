@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-iti-key-12345-secured
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
 
@@ -41,11 +41,7 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
     const { email, password } = req.body;
     const cleanEmail = email.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (!user) {
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' });
-      return;
-    }
+    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
 
     // Admin account: use env-var password (bypasses hash — works reliably on serverless)
     const ADMIN_EMAIL = 'admin@iti.gov.in';
@@ -56,7 +52,26 @@ router.post('/login', validate(loginSchema), async (req, res): Promise<void> => 
         res.status(401).json({ status: 'error', message: 'Invalid email or password' });
         return;
       }
+
+      // If default admin does not exist in production DB yet, auto-create it now
+      if (!user) {
+        const defaultPasswordHash = await hashPassword(ADMIN_PASSWORD);
+        user = await prisma.user.create({
+          data: {
+            email: ADMIN_EMAIL,
+            name: 'System Admin',
+            password: defaultPasswordHash,
+            designation: 'Principal / ITI Administrator',
+            isVerified: true,
+          },
+        });
+      }
     } else {
+      if (!user) {
+        res.status(401).json({ status: 'error', message: 'Invalid email or password' });
+        return;
+      }
+
       // For any other user, compare against stored hash
       const isMatch = await verifyPassword(password, user.password);
       if (!isMatch) {
