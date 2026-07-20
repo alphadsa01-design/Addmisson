@@ -9,7 +9,7 @@ export const createAdmissionSchema = z.object({
     fatherName: z.string().min(2, 'Father name is required'),
     gender: z.string().min(1, 'Gender is required'),
     category: z.string().min(1, 'Category is required'),
-    tradeId: z.string().uuid('Invalid Trade ID'),
+    tradeId: z.string().min(1, 'Please select a valid course trade'),
     address: z.string().min(5, 'Address is required'),
     mobileNumber: z.string().regex(/^[0-9]{10}$/, 'Mobile number must be exactly 10 digits'),
     admissionDate: z.string().optional().nullable(),
@@ -26,7 +26,7 @@ export const createAdmissionSchema = z.object({
     bloodGroup: z.string().optional().nullable(),
     nationality: z.string().optional().nullable(),
 
-    instituteId: z.string().uuid('Invalid Institute ID').optional().nullable(),
+    instituteId: z.string().optional().nullable(),
     academicYear: z.string().optional().nullable(),
     remarks: z.string().optional().nullable(),
 
@@ -49,7 +49,7 @@ export const updateAdmissionSchema = z.object({
     fatherName: z.string().optional(),
     gender: z.string().optional(),
     category: z.string().optional(),
-    tradeId: z.string().uuid().optional(),
+    tradeId: z.string().optional(),
     address: z.string().optional(),
     mobileNumber: z.string().regex(/^[0-9]{10}$/, 'Mobile number must be exactly 10 digits').optional(),
     admissionDate: z.string().optional().nullable(),
@@ -65,7 +65,7 @@ export const updateAdmissionSchema = z.object({
     bloodGroup: z.string().optional().nullable(),
     nationality: z.string().optional().nullable(),
 
-    instituteId: z.string().uuid().optional().nullable(),
+    instituteId: z.string().optional().nullable(),
     academicYear: z.string().optional().nullable(),
     status: z.enum(['PENDING', 'VERIFIED', 'COMPLETED', 'CANCELLED']).optional(),
     feeStatus: z.enum(['PAID', 'UNPAID', 'PARTIAL']).optional(),

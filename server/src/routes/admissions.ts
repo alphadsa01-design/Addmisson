@@ -42,6 +42,30 @@ router.post(
         remarks,
       } = req.body;
 
+      // Handle trade resolution
+      let finalTradeId = tradeId;
+      if (finalTradeId) {
+        const foundTrade = await prisma.trade.findFirst({
+          where: { OR: [{ id: finalTradeId }, { code: finalTradeId }] },
+          select: { id: true },
+        });
+        if (foundTrade) {
+          finalTradeId = foundTrade.id;
+        } else {
+          // Auto-create trade record in DB if missing
+          const newTrade = await prisma.trade.create({
+            data: {
+              id: finalTradeId,
+              name: finalTradeId.replace('TRADE_', '').replace(/_/g, ' '),
+              code: finalTradeId,
+              durationYears: 2,
+            },
+            select: { id: true },
+          }).catch(() => null);
+          if (newTrade) finalTradeId = newTrade.id;
+        }
+      }
+
       // Handle missing instituteId
       let finalInstituteId = instituteId;
       if (!finalInstituteId) {
@@ -108,7 +132,7 @@ router.post(
             admissionDate: admissionDate ? new Date(admissionDate) : new Date(),
             studentId: student.id,
             instituteId: finalInstituteId,
-            tradeId,
+            tradeId: finalTradeId,
             academicYear: finalAcademicYear,
             status: 'PENDING',
             feeStatus: 'UNPAID',

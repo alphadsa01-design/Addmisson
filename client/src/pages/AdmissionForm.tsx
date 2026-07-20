@@ -13,7 +13,7 @@ const formSchema = z.object({
   fatherName: z.string().min(2, 'Father name must be at least 2 characters'),
   gender: z.string().min(1, 'Gender selection is required'),
   category: z.string().min(1, 'Category selection is required'),
-  tradeId: z.string().uuid('Please select a course trade'),
+  tradeId: z.string().min(1, 'Please select a course trade'),
   address: z.string().min(5, 'Address is too short'),
   mobileNumber: z.string().regex(/^[0-9]{10}$/, 'Mobile number must be exactly 10 digits'),
   admissionDate: z.string().min(1, 'Date of admission is required'),
