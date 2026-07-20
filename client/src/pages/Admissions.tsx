@@ -76,7 +76,9 @@ const Admissions: React.FC = () => {
   const fetchDropdowns = async () => {
     try {
       const tradeRes = await api.get('/admissions/meta/trades');
-      setTrades(tradeRes.data.data.trades);
+      if (tradeRes.data?.data?.trades?.length > 0) {
+        setTrades(tradeRes.data.data.trades);
+      }
     } catch (err) {
       console.error('Failed to load dropdown filters', err);
     }

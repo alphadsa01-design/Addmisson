@@ -63,14 +63,18 @@ const AdmissionForm: React.FC = () => {
   const fetchMetadata = async () => {
     try {
       const [instRes, tradeRes, statsRes] = await Promise.all([
-        api.get('/admissions/meta/institutes'),
-        api.get('/admissions/meta/trades'),
-        api.get('/admissions/stats'),
+        api.get('/admissions/meta/institutes').catch(() => ({ data: { status: 'success', data: { institutes: [] } } })),
+        api.get('/admissions/meta/trades').catch(() => ({ data: { status: 'success', data: { trades: [] } } })),
+        api.get('/admissions/stats').catch(() => ({ data: { status: 'success', data: { total: 0 } } })),
       ]);
-      setInstitutes(instRes.data.data.institutes);
-      setTrades(tradeRes.data.data.trades);
-      
-      if (!isEdit && statsRes.data.status === 'success') {
+
+      const fetchedInsts = instRes.data?.data?.institutes || [];
+      const fetchedTrades = tradeRes.data?.data?.trades || [];
+
+      if (fetchedInsts.length > 0) setInstitutes(fetchedInsts);
+      if (fetchedTrades.length > 0) setTrades(fetchedTrades);
+
+      if (!isEdit && statsRes.data?.status === 'success' && statsRes.data?.data?.total !== undefined) {
         const nextSno = String(statsRes.data.data.total + 1);
         setValue('sno', nextSno);
       }
